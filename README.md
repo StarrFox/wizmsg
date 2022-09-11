@@ -1,2 +1,7 @@
 # wizmsg
-python impl of wizard101's messaging system
+python implementation of wizard101's messaging system
+
+# usage
+```python
+import wizmsg
+```
