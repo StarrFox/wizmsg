@@ -17,39 +17,75 @@ class ByteInterface(BytesIO):
 
         return unpacked
 
-    # def write_format_string(self, format_string: str, data: UnpackedData):
-    #     packed = struct.pack(format_string, data)
-    #     self.write(packed)
+    def write_format_string(self, format_string: str, data: UnpackedData) -> int:
+        """
+        returns the number of bytes written
+        """
+        packed = struct.pack(format_string, data)
+        return self.write(packed)
 
     def bool(self) -> bool:
         return self.read_format_string("?")
 
+    def write_bool(self, data: bool) -> int:
+        return self.write_format_string("?", data)
+
     def float(self) -> float:
         return self.read_format_string("<f")
+
+    def write_float(self, data: float) -> int:
+        return self.write_format_string("<f", data)
 
     def double(self) -> float:
         return self.read_format_string("<d")
 
+    def write_double(self, data: float) -> int:
+        return self.write_format_string("<d", data)
+
     def unsigned1(self) -> int:
         return self.read_format_string("<B")
+
+    def write_unsigned1(self, data: int) -> int:
+        return self.write_format_string("<B", data)
 
     def signed1(self) -> int:
         return self.read_format_string("<b")
 
+    def write_signed1(self, data: int) -> int:
+        return self.write_format_string("<b", data)
+
     def unsigned2(self) -> int:
         return self.read_format_string("<H")
+
+    def write_unsigned2(self, data: int) -> int:
+        return self.write_format_string("<H", data)
 
     def signed2(self) -> int:
         return self.read_format_string("<h")
 
+    def write_signed2(self, data: int) -> int:
+        return self.write_format_string("<h", data)
+
     def unsigned4(self) -> int:
         return self.read_format_string("<I")
+
+    def write_unsigned4(self, data: int) -> int:
+        return self.write_format_string("<I", data)
 
     def signed4(self) -> int:
         return self.read_format_string("<i")
 
+    def write_signed4(self, data: int) -> int:
+        return self.write_format_string("<i", data)
+
     def unsigned8(self) -> int:
         return self.read_format_string("<Q")
 
+    def write_unsigned8(self, data: int) -> int:
+        return self.write_format_string("<Q", data)
+
     def signed8(self) -> int:
         return self.read_format_string("<q")
+
+    def write_signed8(self, data: int) -> int:
+        return self.write_format_string("<q", data)
