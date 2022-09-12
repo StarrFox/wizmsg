@@ -1,2 +1,2 @@
-from .concepts import Protocol, Message, MessageParameter
+from .protocol import Protocol, Message, MessageParameter
 from .server import Server

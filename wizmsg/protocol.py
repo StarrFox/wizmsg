@@ -13,11 +13,12 @@ class MessageParameter:
 class Message:
     name: str
     description: str
-    parameters: list[MessageParameter]
+    # param name: MessageParameter
+    parameters: dict[str, MessageParameter]
 
 
-def _get_messages_from_xml(root_element: ElementTree.Element) -> list[Message]:
-    messages = []
+def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[str, Message]:
+    messages = {}
     for message_element in root_element:
         if message_element.tag == "_ProtocolInfo":
             continue
@@ -35,7 +36,7 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> list[Message]:
         message_name = _get_record_value("_MsgName")
         message_description = _get_record_value("_MsgDescription")
 
-        parameters = []
+        parameters = {}
         for parameter_element in record:
             parameter_name = parameter_element.tag
             if parameter_name.startswith("_"):
@@ -43,9 +44,9 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> list[Message]:
 
             parameter_type = parameter_element.attrib["TYPE"]
 
-            parameters.append(MessageParameter(parameter_name, parameter_type))
+            parameters[parameter_name] = MessageParameter(parameter_name, parameter_type)
 
-        messages.append(Message(message_name, message_description, parameters))
+        messages[message_name] = Message(message_name, message_description, parameters)
 
     return messages
 
@@ -56,7 +57,8 @@ class Protocol:
     type: str
     version: int
     description: str
-    messages: list[Message]
+    # message name: Message
+    messages: dict[str, Message]
 
     @classmethod
     def from_xml_file(cls, file_path: str | Path):
