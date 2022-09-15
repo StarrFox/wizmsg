@@ -1,7 +1,11 @@
 import asyncio
+import struct
 from pathlib import Path
+from io import StringIO
 
+from wizmsg import DATA_START_MAGIC, LARGE_DATA_MAGIC
 from .protocol import Protocol
+from .byte_interface import ByteInterface
 
 
 class Server:
@@ -13,7 +17,9 @@ class Server:
         self.protocols: dict[int, Protocol] = {}
         self.server = None
 
-    def load_protocol(self, protocol_path: str | Path) -> Protocol:
+        self.sessions = []
+
+    def load_protocol(self, protocol_path: str | Path | StringIO) -> Protocol:
         if isinstance(protocol_path, str):
             protocol_path = Path(protocol_path)
 
@@ -22,6 +28,13 @@ class Server:
         self._register_protocol(protocol)
 
         return protocol
+
+    # this is because we already accept strings as paths
+    def load_protocol_from_string(self, protocol_string: str | StringIO) -> Protocol:
+        if isinstance(protocol_string, str):
+            protocol_string = StringIO(protocol_string)
+
+        return self.load_protocol(protocol_string)
 
     def load_protocols_from_directory(
             self,
@@ -51,9 +64,18 @@ class Server:
         self.protocols[protocol.service_id] = protocol
 
     async def _client_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        data = await reader.read(100)
+        magic_and_size = await reader.read(4)
 
-        print(f"{data=}")
+        magic, size = struct.unpack("<HH", magic_and_size)
+
+        assert magic == DATA_START_MAGIC, f"Magic mismatch, {magic=} {DATA_START_MAGIC=}"
+
+        if size >= LARGE_DATA_MAGIC:
+            large_size_data = await reader.read(4)
+
+            size = struct.unpack("<I", large_size_data)
+
+        data = ByteInterface(await reader.read(size))
 
     async def run(self):
         self.server = await asyncio.start_server(

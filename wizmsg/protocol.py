@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from xml.etree import ElementTree
+from io import StringIO
 
 
 @dataclass
@@ -61,7 +62,14 @@ class Protocol:
     messages: dict[str, Message]
 
     @classmethod
-    def from_xml_file(cls, file_path: str | Path):
+    def from_string(cls, protocol_string: str | StringIO):
+        if isinstance(protocol_string, str):
+            protocol_string = StringIO(protocol_string)
+
+        return cls.from_xml_file(protocol_string)
+
+    @classmethod
+    def from_xml_file(cls, file_path: str | Path | StringIO):
         if isinstance(file_path, str):
             file_path = Path(file_path)
 
