@@ -24,6 +24,28 @@ class ByteInterface(BytesIO):
         packed = struct.pack(format_string, data)
         return self.write(packed)
 
+    def string(self) -> str:
+        # 2 bytes for length
+        length = self.unsigned2()
+        data = self.read(length)
+        return data.decode()
+
+    def write_string(self, string: str):
+        length = len(string)
+        self.write_unsigned2(length)
+        self.write(string.encode())
+
+    def wide_string(self) -> str:
+        # length is number of characters
+        length = self.unsigned2() * 2
+        data = self.read(length)
+        return data.decode("utf-16")
+
+    def write_wide_string(self, wide_string: str):
+        length = len(wide_string)
+        self.write_unsigned2(length)
+        self.write(wide_string.encode("utf-16"))
+
     def bool(self) -> bool:
         return self.read_format_string("?")
 

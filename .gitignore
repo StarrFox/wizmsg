@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 
 message_files/*
+local_example_data/*

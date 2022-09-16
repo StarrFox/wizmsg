@@ -4,7 +4,7 @@ from pathlib import Path
 from io import StringIO
 
 from wizmsg import DATA_START_MAGIC, LARGE_DATA_MAGIC
-from .protocol import Protocol
+from .protocol_definition import ProtocolDefinition
 from .byte_interface import ByteInterface
 
 
@@ -14,23 +14,23 @@ class Server:
         self.port = port
 
         # protocol id: Protocol
-        self.protocols: dict[int, Protocol] = {}
+        self.protocol_definitions: dict[int, ProtocolDefinition] = {}
         self.server = None
 
         self.sessions = []
 
-    def load_protocol(self, protocol_path: str | Path | StringIO) -> Protocol:
+    def load_protocol(self, protocol_path: str | Path | StringIO) -> ProtocolDefinition:
         if isinstance(protocol_path, str):
             protocol_path = Path(protocol_path)
 
-        protocol = Protocol.from_xml_file(protocol_path)
+        protocol = ProtocolDefinition.from_xml_file(protocol_path)
 
         self._register_protocol(protocol)
 
         return protocol
 
     # this is because we already accept strings as paths
-    def load_protocol_from_string(self, protocol_string: str | StringIO) -> Protocol:
+    def load_protocol_from_string(self, protocol_string: str | StringIO) -> ProtocolDefinition:
         if isinstance(protocol_string, str):
             protocol_string = StringIO(protocol_string)
 
@@ -41,7 +41,7 @@ class Server:
             protocol_directory: str | Path,
             *,
             allowed_glob: str = "*.xml",
-    ) -> list[Protocol]:
+    ) -> list[ProtocolDefinition]:
         """
         server.load_protocols_from_directory("messages", allowed_glob="*Messages.xml")
         """
@@ -54,14 +54,14 @@ class Server:
 
         return protocols
 
-    def _register_protocol(self, protocol: Protocol):
+    def _register_protocol(self, protocol: ProtocolDefinition):
         """
         abstract protocol registering in the likely case that more logic needs to be added
         """
-        if self.protocols.get(protocol.service_id):
+        if self.protocol_definitions.get(protocol.service_id):
             raise ValueError(f"Protocol id {protocol.service_id} is already registered")
 
-        self.protocols[protocol.service_id] = protocol
+        self.protocol_definitions[protocol.service_id] = protocol
 
     async def _client_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         magic_and_size = await reader.read(4)

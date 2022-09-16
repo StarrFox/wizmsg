@@ -5,20 +5,20 @@ from io import StringIO
 
 
 @dataclass
-class MessageParameter:
+class MessageDefinitionParameter:
     name: str
     type: str
 
 
 @dataclass
-class Message:
+class MessageDefinition:
+    order: int | None
     name: str
     description: str
-    # param name: MessageParameter
-    parameters: dict[str, MessageParameter]
+    parameters: list[MessageDefinitionParameter]
 
 
-def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[str, Message]:
+def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[int, MessageDefinition]:
     messages = {}
     for message_element in root_element:
         if message_element.tag == "_ProtocolInfo":
@@ -26,18 +26,30 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[str, Messa
 
         record = message_element[0]
 
-        def _get_record_value(sub_element_name) -> str:
+        def _get_record_value(
+                sub_element_name,
+                *,
+                allow_missing: bool = False,
+                as_int: bool = False
+        ) -> int | str | None:
             element = record.find(sub_element_name)
 
             if element is None:
+                if allow_missing:
+                    return None
+
                 raise ValueError(f"{sub_element_name} missing from message entry")
+
+            if as_int:
+                return int(element.text)
 
             return element.text
 
         message_name = _get_record_value("_MsgName")
         message_description = _get_record_value("_MsgDescription")
+        message_order = _get_record_value("_MsgOrder", allow_missing=True, as_int=True)
 
-        parameters = {}
+        parameters = []
         for parameter_element in record:
             parameter_name = parameter_element.tag
             if parameter_name.startswith("_"):
@@ -45,21 +57,51 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[str, Messa
 
             parameter_type = parameter_element.attrib["TYPE"]
 
-            parameters[parameter_name] = MessageParameter(parameter_name, parameter_type)
+            parameters.append(MessageDefinitionParameter(parameter_name, parameter_type))
 
-        messages[message_name] = Message(message_name, message_description, parameters)
+        # ignore duplicates
+        if messages.get(message_name):
+            continue
 
-    return messages
+        messages[message_name] = MessageDefinition(message_order, message_name, message_description, parameters)
+
+    messages = list(messages.values())
+
+    # order: message
+    sorted_messages = {}
+
+    in_message_order = False
+    for messsage in messages:
+        if messsage.order is not None:
+            in_message_order = True
+            break
+
+    if in_message_order:
+        # if message.order use that
+        messages = sorted(messages, key=lambda m: m.order)
+    else:
+        # if no message.order use name to sort
+        messages = sorted(messages, key=lambda m: m.name)
+
+    # message order starts at 1
+    for idx, message in enumerate(messages, start=1):
+        # sanity check
+        if message.order is not None and message.order != idx:
+            raise RuntimeError(f"index and message order mismatch {message.order=} {idx=}")
+
+        sorted_messages[idx] = message
+
+    return sorted_messages
 
 
 @dataclass
-class Protocol:
+class ProtocolDefinition:
     service_id: int
     type: str
     version: int
     description: str
-    # message name: Message
-    messages: dict[str, Message]
+    # message id: MessageDefinition
+    messages: dict[int, MessageDefinition]
 
     @classmethod
     def from_string(cls, protocol_string: str | StringIO):
