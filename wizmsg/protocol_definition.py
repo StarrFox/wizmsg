@@ -3,6 +3,9 @@ from pathlib import Path
 from xml.etree import ElementTree
 from io import StringIO
 
+from loguru import logger
+
+
 
 @dataclass
 class MessageDefinitionParameter:
@@ -45,7 +48,9 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[int, Messa
 
             return element.text
 
-        message_name = _get_record_value("_MsgName")
+        # this MsgName is actually incorrect; doesn't match the tag name which is used for sorting
+        # message_name = _get_record_value("_MsgName")
+        message_name = message_element.tag
         message_description = _get_record_value("_MsgDescription")
         message_order = _get_record_value("_MsgOrder", allow_missing=True, as_int=True)
 
@@ -61,6 +66,7 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[int, Messa
 
         # ignore duplicates
         if messages.get(message_name):
+            logger.debug(f"ignoring duplicate message {message_name}")
             continue
 
         messages[message_name] = MessageDefinition(message_order, message_name, message_description, parameters)
@@ -70,11 +76,12 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[int, Messa
     # order: message
     sorted_messages = {}
 
-    in_message_order = False
-    for messsage in messages:
-        if messsage.order is not None:
+    for message in messages:
+        if message.order is not None:
             in_message_order = True
             break
+    else:
+        in_message_order = False
 
     if in_message_order:
         # if message.order use that
@@ -91,6 +98,7 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[int, Messa
 
         sorted_messages[idx] = message
 
+    # TODO: find out why messages are sorted wrong sometimes i.e. 182 in GameMessages
     return sorted_messages
 
 
@@ -141,3 +149,11 @@ class ProtocolDefinition:
         messages = _get_messages_from_xml(root_element)
 
         return cls(service_id, protocol_type, protocol_version, protocol_description, messages)
+
+
+if __name__ == "__main__":
+    definition = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/GameMessages.xml")
+
+    for order, message in definition.messages.items():
+        print(f"{order}: {message.name}")
+

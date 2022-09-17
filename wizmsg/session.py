@@ -58,7 +58,7 @@ class Session:
 
                 size = struct.unpack("<I", large_size_data)
 
-            data = ByteInterface(await self.reader.read(size))
+            data = ByteInterface(await self.reader.read(size + 1))
 
     async def dispatch_control(self):
         pass

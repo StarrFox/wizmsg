@@ -1,10 +1,8 @@
 import asyncio
 import struct
-from pathlib import Path
-from io import StringIO
 
-from wizmsg import DATA_START_MAGIC, LARGE_DATA_MAGIC
-from .protocol_definition import ProtocolDefinition
+
+from wizmsg import DATA_START_MAGIC, LARGE_DATA_MAGIC, network
 from .byte_interface import ByteInterface
 
 
@@ -13,57 +11,12 @@ class Server:
         self.address = address
         self.port = port
 
-        # protocol id: Protocol
-        self.protocol_definitions: dict[int, ProtocolDefinition] = {}
         self.server = None
-
+        self.message_processor = network.Processor()
         self.sessions = []
 
-    def load_protocol(self, protocol_path: str | Path | StringIO) -> ProtocolDefinition:
-        if isinstance(protocol_path, str):
-            protocol_path = Path(protocol_path)
-
-        protocol = ProtocolDefinition.from_xml_file(protocol_path)
-
-        self._register_protocol(protocol)
-
-        return protocol
-
-    # this is because we already accept strings as paths
-    def load_protocol_from_string(self, protocol_string: str | StringIO) -> ProtocolDefinition:
-        if isinstance(protocol_string, str):
-            protocol_string = StringIO(protocol_string)
-
-        return self.load_protocol(protocol_string)
-
-    def load_protocols_from_directory(
-            self,
-            protocol_directory: str | Path,
-            *,
-            allowed_glob: str = "*.xml",
-    ) -> list[ProtocolDefinition]:
-        """
-        server.load_protocols_from_directory("messages", allowed_glob="*Messages.xml")
-        """
-        if isinstance(protocol_directory, str):
-            protocol_directory = Path(protocol_directory)
-
-        protocols = []
-        for protocol_file in protocol_directory.glob(allowed_glob):
-            protocols.append(self.load_protocol(protocol_file))
-
-        return protocols
-
-    def _register_protocol(self, protocol: ProtocolDefinition):
-        """
-        abstract protocol registering in the likely case that more logic needs to be added
-        """
-        if self.protocol_definitions.get(protocol.service_id):
-            raise ValueError(f"Protocol id {protocol.service_id} is already registered")
-
-        self.protocol_definitions[protocol.service_id] = protocol
-
     async def _client_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+        # TODO: figure out a nice way to not duplicate this code
         magic_and_size = await reader.read(4)
 
         magic, size = struct.unpack("<HH", magic_and_size)
@@ -75,7 +28,8 @@ class Server:
 
             size = struct.unpack("<I", large_size_data)
 
-        data = ByteInterface(await reader.read(size))
+        data = ByteInterface(await reader.read(size + 1))
+        message = self.message_processor.process_message_data(data)
 
     async def run(self):
         self.server = await asyncio.start_server(

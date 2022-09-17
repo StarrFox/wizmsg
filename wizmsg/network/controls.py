@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class ControlMessage:
+class Control:
     opcode: int
 
     @classmethod
@@ -19,7 +19,7 @@ class ControlMessage:
 
 
 @dataclass
-class SessionOffer(ControlMessage):
+class SessionOffer(Control):
     session_id: int
 
     opcode: int = 0
@@ -37,5 +37,5 @@ class SessionOffer(ControlMessage):
 
 
 @dataclass
-class ServerKeepAlive(ControlMessage):
+class ServerKeepAlive(Control):
     session_id: int
