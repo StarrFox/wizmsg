@@ -1,4 +1,4 @@
 #!/usr/bin/env just --justfile
 
 test:
-  pytest
+  poetry run pytest

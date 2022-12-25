@@ -23,4 +23,3 @@ jobs:
       run: |
         poetry version | awk '{print $2}' | xargs git tag && git push --tags
         exit 0
-

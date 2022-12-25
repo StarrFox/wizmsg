@@ -4,8 +4,9 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 
-from wizmsg import ByteInterface, ProtocolDefinition
+from wizmsg import ByteInterface, ProtocolDefinition, DATA_START_MAGIC, LARGE_DATA_MAGIC
 from wizmsg.network.protocol import Protocol
+from wizmsg.network.controls import SessionOffer, SessionAccept, KeepAlive, KeepAliveResponse
 
 
 if TYPE_CHECKING:
@@ -53,38 +54,62 @@ class Processor:
 
         return protocols
 
-    def process_message_data(self, data: ByteInterface | bytes, *, session: "Session" = None):
+    def process_message_data(self, data: ByteInterface, *, session: "Session" = None):
         """
-        Gets data after data length
+        Processes a data message
         """
-        if isinstance(data, bytes):
-            data = ByteInterface(data)
+        service_id = data.unsigned1()
 
-        is_control = data.bool()
-        control_opcode = data.unsigned1()
+        protocol = self.protocols.get(service_id)
 
-        reserved = data.unsigned2()
+        if protocol is None:
+            raise RuntimeError(f"Unexpected service id {service_id}")
+
+        return protocol.process_protocol_data(data)
+
+    def process_control_data(self, data: ByteInterface, opcode: int):
+        """
+        Processes a control message
+        """
+
+        for control_type in (SessionOffer, SessionAccept, KeepAlive, KeepAliveResponse):
+            if control_type.opcode == opcode:
+                return control_type.from_data(data)
+
+        raise ValueError(f"{opcode} is not a registered opcode")
+
+    def process_frame(self, raw: bytes):
+        raw = ByteInterface(raw)
+
+        magic = raw.unsigned2()
+
+        if magic != DATA_START_MAGIC:
+            raise ValueError(f"Magic mismatch, expected: {DATA_START_MAGIC} got: {magic}")
+
+        # I don't really need size or large size
+        size = raw.unsigned2()
+
+        if size >= LARGE_DATA_MAGIC:
+            large_size_data = raw.unsigned4()
+
+        is_control = raw.bool()
+        control_opcode = raw.unsigned1()
+
+        reserved = raw.unsigned2()
 
         if is_control:
-            raise NotImplementedError("forgot controls")
+            return self.process_control_data(raw, control_opcode)
 
         else:
-            service_id = data.unsigned1()
-
-            protocol = self.protocols.get(service_id)
-
-            if protocol is None:
-                raise RuntimeError(f"Unexpected service id {service_id}")
-
-            logger.debug(f"{control_opcode=} {reserved=} rest={data.getbuffer()[data.tell():].hex(' ')}")
-            return protocol.process_protocol_data(data)
+            return self.process_message_data(raw)
 
 
 if __name__ == "__main__":
-    test_data = bytes.fromhex("00 00 00 00 05 49 17 00 01 00 00 00 f2 68 2d 09 00 00 fc 01 05 00 4d 6f 75 6e 74 00")
+    test_data = bytes.fromhex(
+        "0d f0 00 00 01 03 00 00 01 00 02 00 03 00"
+    )
 
     processor = Processor()
-    processor.load_protocol("/home/starr/PycharmProjects/wizmsg/message_files/GameMessages.xml")
 
-    message = processor.process_message_data(test_data)
-    print(f"{message.name}: {message.parameters}")
+    message = processor.process_frame(test_data)
+    print(f"{message}")

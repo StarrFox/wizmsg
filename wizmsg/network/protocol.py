@@ -24,7 +24,7 @@ class Message:
     def process_message_data(self, data: "ByteInterface") -> MessageData:
         """Only gets the arg data"""
         parameters = {}
-        for parameter_definition in self.definition.parameters:
+        for parameter_definition in self.definition.parameters.values():
             name = parameter_definition.name
             param_type = parameter_definition.type
 

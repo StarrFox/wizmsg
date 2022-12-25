@@ -32,19 +32,19 @@ def test_load_protocol_from_string():
     assert protocol.description == "Fake Messages"
 
     # TODO: fix
-    # assert protocol.messages.get("MSG_TEST") is not None
-    #
-    # test_message = protocol.messages["MSG_TEST"]
-    #
-    # assert test_message.description == "test if protocol system works"
-    # assert test_message.name == "MSG_TEST"
-    #
-    # assert test_message.parameters.get("Number") is not None
-    #
-    # test_message_number_parameter = test_message.parameters["Number"]
-    #
-    # assert test_message_number_parameter.name == "Number"
-    # assert test_message_number_parameter.type == "INT"
+    assert protocol.messages.get(1) is not None
+
+    test_message = protocol.messages["MSG_TEST"]
+
+    assert test_message.description == "test if protocol system works"
+    assert test_message.name == "MSG_TEST"
+
+    assert test_message.parameters.get("Number") is not None
+
+    test_message_number_parameter = test_message.parameters["Number"]
+
+    assert test_message_number_parameter.name == "Number"
+    assert test_message_number_parameter.type == "INT"
 
 
 def test_load_protocol_from_file():
@@ -52,3 +52,13 @@ def test_load_protocol_from_file():
     protocol = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/GameMessages.xml")
 
     assert protocol.description == "Game Messages"
+
+    protocol = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/LoginMessages.xml")
+    protocol = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/PatchMessages.xml")
+    protocol = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/PetMessages.xml")
+    protocol = ProtocolDefinition.from_xml_file(
+        "/home/starr/PycharmProjects/wizmsg/message_files/ScriptDebuggerMessages.xml"
+    )
+    protocol = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/WizardMessages.xml")
+
+

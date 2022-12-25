@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Union
 from xml.etree import ElementTree
 from io import StringIO
 
 from loguru import logger
-
 
 
 @dataclass
@@ -18,10 +18,10 @@ class MessageDefinition:
     order: int | None
     name: str
     description: str
-    parameters: list[MessageDefinitionParameter]
+    parameters: dict[str, MessageDefinitionParameter]
 
 
-def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[int, MessageDefinition]:
+def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[Union[int, str], MessageDefinition]:
     messages = {}
     for message_element in root_element:
         if message_element.tag == "_ProtocolInfo":
@@ -54,15 +54,28 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[int, Messa
         message_description = _get_record_value("_MsgDescription")
         message_order = _get_record_value("_MsgOrder", allow_missing=True, as_int=True)
 
-        parameters = []
+        parameters = {}
         for parameter_element in record:
             parameter_name = parameter_element.tag
             if parameter_name.startswith("_"):
                 continue
 
-            parameter_type = parameter_element.attrib["TYPE"]
+            # TODO: sometimes this isn't provided, mainly to troll
+            try:
+                parameter_type = parameter_element.attrib["TYPE"]
+            except KeyError:
+                if parameter_name == "GlobalID":
+                    logger.debug(
+                        f"Missing TYPE for param {parameter_name} on message {message_name}"
+                    )
+                    parameter_type = "GID"
 
-            parameters.append(MessageDefinitionParameter(parameter_name, parameter_type))
+                else:
+                    raise RuntimeError(
+                        f"Unhandled TYPE for param {parameter_name} of message {message_name}"
+                    )
+
+            parameters[parameter_name] = (MessageDefinitionParameter(parameter_name, parameter_type))
 
         # ignore duplicates
         if messages.get(message_name):
@@ -71,12 +84,12 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[int, Messa
 
         messages[message_name] = MessageDefinition(message_order, message_name, message_description, parameters)
 
-    messages = list(messages.values())
+    message_defs = list(messages.values())
 
     # order: message
     sorted_messages = {}
 
-    for message in messages:
+    for message in message_defs:
         if message.order is not None:
             in_message_order = True
             break
@@ -85,18 +98,20 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[int, Messa
 
     if in_message_order:
         # if message.order use that
-        messages = sorted(messages, key=lambda m: m.order)
+        message_defs = sorted(message_defs, key=lambda m: m.order)
     else:
         # if no message.order use name to sort
-        messages = sorted(messages, key=lambda m: m.name)
+        message_defs = sorted(message_defs, key=lambda m: m.name)
 
     # message order starts at 1
-    for idx, message in enumerate(messages, start=1):
+    for idx, message in enumerate(message_defs, start=1):
         # sanity check
         if message.order is not None and message.order != idx:
             raise RuntimeError(f"index and message order mismatch {message.order=} {idx=}")
 
         sorted_messages[idx] = message
+
+    sorted_messages.update(messages)
 
     # TODO: find out why messages are sorted wrong sometimes i.e. 182 in GameMessages
     return sorted_messages
@@ -156,4 +171,3 @@ if __name__ == "__main__":
 
     for order, message in definition.messages.items():
         print(f"{order}: {message.name}")
-
