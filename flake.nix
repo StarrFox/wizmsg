@@ -11,14 +11,8 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
-        customOverrides = self: super: {
-          # Overrides go here
-        };
-
         app = pkgs.poetry2nix.mkPoetryApplication {
           projectDir = ./.;
-          overrides =
-            [ pkgs.poetry2nix.defaultPoetryOverrides customOverrides ];
         };
 
         packageName = "wizmsg";
