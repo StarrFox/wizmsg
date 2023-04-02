@@ -132,3 +132,6 @@ message_files/*
 local_example_data/*
 
 .idea/*
+
+# nix
+result
