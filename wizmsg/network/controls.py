@@ -15,7 +15,7 @@ class Control:
     def from_data(cls, data: "ByteInterface") -> "Control":
         raise NotImplementedError()
 
-    def to_data(self) -> bytes:
+    def to_data(self, buffer: "ByteInterface") -> int:
         raise NotImplementedError()
 
 
@@ -39,11 +39,10 @@ class SessionOffer(Control):
         session_id = data.unsigned2()
 
         # TODO: 2038 max 4 byte timestamp reached
-        # high 4 bytes
-        data.unsigned4()
-
-        timestamp = data.unsigned4()
+        data.signed4()
+        timestamp = data.signed4()
         milliseconds = data.unsigned4()
+
         # crypto len
         data.unsigned4()
 
@@ -55,7 +54,6 @@ class SessionOffer(Control):
         crypto_nonce = data.unsigned4()
         crypto_signature = data.read(256)
 
-        # TODO: does this really exist
         # reserved
         data.unsigned1()
 
@@ -73,8 +71,38 @@ class SessionOffer(Control):
             opcode=0,
         )
 
-    def to_data(self) -> bytes:
-        raise NotImplementedError()
+    def to_data(self, buffer: "ByteInterface") -> int:
+        written = 0
+
+        written += buffer.write_unsigned2(self.session_id)
+
+        # TODO: 2038 max 4 byte timestamp reached
+        written += buffer.write_signed4(0)
+        written += buffer.write_signed4(self.timestamp)
+        written += buffer.write_unsigned4(self.milliseconds)
+
+        crypto_payload_pos = buffer.tell()
+        written += buffer.write_unsigned4(0)
+
+        written += buffer.write_unsigned1(self.crypto_flags)
+        written += buffer.write_unsigned1(self.crypto_key_slot)
+        written += buffer.write_unsigned1(self.crypto_key_mask)
+        written += buffer.write_unsigned1(len(self.crypto_challenge))
+        written += buffer.write(self.crypto_challenge)
+        written += buffer.write_unsigned4(self.crypto_nonce)
+        written += buffer.write(self.crypto_signature)
+
+        current_pos = buffer.tell()
+        buffer.seek(crypto_payload_pos)
+
+        crypto_payload_len = current_pos - crypto_payload_pos + 4
+        buffer.write_unsigned4(crypto_payload_len)
+
+        buffer.seek(current_pos)
+
+        written += buffer.write_unsigned1(0)
+
+        return written
 
 
 @dataclass
@@ -98,20 +126,27 @@ class KeepAlive(Control):
             opcode=3,
         )
 
-    def to_data(self) -> bytes:
-        raise NotImplementedError()
+    def to_data(self, buffer: "ByteInterface") -> int:
+        written = 0
+
+        written += buffer.write_unsigned2(self.session_id)
+        written += buffer.write_unsigned2(self.milliseconds)
+        written += buffer.write_unsigned2(self.session_minutes)
+
+        return written
 
 
 @dataclass
 class KeepAliveResponse(KeepAlive):
     opcode = 4
 
-    def to_data(self) -> bytes:
-        raise NotImplementedError()
-
 
 @dataclass
 class SessionAccept(Control):
+    timestamp: int
+    milliseconds: int
+    session_id: int
+
     unknown: int
     fnv: int
     challenge_answer: int
@@ -124,6 +159,18 @@ class SessionAccept(Control):
 
     @classmethod
     def from_data(cls, data: "ByteInterface") -> "SessionAccept":
+        data.unsigned2()
+
+        # TODO: 2038 max 4 byte timestamp reached
+        data.signed4()
+        timestamp = data.signed4()
+        milliseconds = data.unsigned4()
+
+        session_id = data.unsigned2()
+
+        # crypto len
+        data.unsigned4()
+
         unknown = data.unsigned1()
         fnv = data.unsigned4()
         challenge_answer = data.unsigned4()
@@ -132,7 +179,12 @@ class SessionAccept(Control):
         key = data.read(16)
         nonce = data.read(16)
 
+        data.unsigned1()
+
         return cls(
+            timestamp=timestamp,
+            milliseconds=milliseconds,
+            session_id=session_id,
             unknown=unknown,
             fnv=fnv,
             challenge_answer=challenge_answer,
@@ -142,5 +194,37 @@ class SessionAccept(Control):
             nonce=nonce,
         )
 
-    def to_data(self) -> bytes:
-        raise NotImplementedError()
+    def to_data(self, buffer: "ByteInterface") -> int:
+        written = 0
+
+        written += buffer.write_unsigned16(0)
+
+        # TODO: 2038 max 4 byte timestamp reached
+        written += buffer.write_signed4(0)
+        written += buffer.write_signed4(self.timestamp)
+        written += buffer.write_unsigned4(self.milliseconds)
+
+        written += buffer.write_unsigned2(self.session_id)
+
+        crypto_payload_pos = buffer.tell()
+        buffer.write_unsigned4(0)
+
+        written += buffer.write_unsigned1(self.unknown)
+        written += buffer.write_unsigned4(self.fnv)
+        written += buffer.write_unsigned4(self.challenge_answer)
+        written += buffer.write_unsigned4(self.echo)
+        written += buffer.write_signed4(self.timestamp)
+        written += buffer.write(self.key)
+        written += buffer.write(self.nonce)
+
+        current_pos = buffer.tell()
+        buffer.seek(crypto_payload_pos)
+
+        crypto_payload_len = current_pos - crypto_payload_pos + 4
+        buffer.write_unsigned4(crypto_payload_len)
+
+        buffer.seek(current_pos)
+
+        written += buffer.write_unsigned1(0)
+
+        return written
