@@ -1,2 +1,2 @@
 from .processor import Processor
-from .protocol import Message, Protocol
+from .protocol import Message, MessageData, Protocol

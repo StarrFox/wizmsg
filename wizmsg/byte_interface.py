@@ -32,17 +32,25 @@ class ByteInterface(BytesIO):
         return self.read(length)
 
     def write_string(self, string: bytes):
-        self.write_unsigned2(len(string))
-        self.write(string)
+        written = 0
+
+        written += self.write_unsigned2(len(string))
+        written += self.write(string)
+
+        return written
 
     def wide_string(self) -> str:
         length = self.unsigned2() * 2
         return self.read(length).decode("utf-16-le")
 
-    def write_wide_string(self, wide_string: str):
+    def write_wide_string(self, wide_string: str) -> int:
+        written = 0
+
         wide_string_encoded = wide_string.encode("utf-16-le")
-        self.write_unsigned2(len(wide_string_encoded))
-        self.write(wide_string_encoded)
+        written += self.write_unsigned2(len(wide_string_encoded))
+        written += self.write(wide_string_encoded)
+
+        return written
 
     def bool(self) -> bool:
         return self._read_single("?")

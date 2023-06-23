@@ -23,7 +23,9 @@ class Message:
     def __init__(self, definition: "MessageDefinition"):
         self.definition = definition
 
-    def process_message_data(self, service_id: int, data: "ByteInterface") -> MessageData:
+    def process_message_data(
+        self, service_id: int, data: "ByteInterface"
+    ) -> MessageData:
         """Only gets the arg data"""
         parameters = {}
         for parameter_definition in self.definition.parameters.values():
@@ -54,14 +56,20 @@ class Message:
 
             parameters[name] = value
 
-        return MessageData(service_id, self.definition.order, self.definition.name, parameters)
+        return MessageData(
+            service_id, self.definition.order, self.definition.name, parameters
+        )
 
-    def prepare_message_data(self, data: "ByteInterface", message_data: MessageData) -> int:
+    def prepare_message_data(
+        self, data: "ByteInterface", message_data: MessageData
+    ) -> int:
         written = 0
 
         for name, value in message_data.parameters.items():
             parameter_definition = self.definition.parameters[name]
-            write_method = "write_" + WIZ_TYPE_CONVERSION_TABLE[parameter_definition.type]
+            write_method = (
+                "write_" + WIZ_TYPE_CONVERSION_TABLE[parameter_definition.type]
+            )
 
             if write_method == "write_string" and isinstance(value, str):
                 value = value.encode()
@@ -102,7 +110,9 @@ class Protocol:
 
         return message_data
 
-    def prepare_protocol_data(self, buffer: "ByteInterface", message_data: MessageData) -> int:
+    def prepare_protocol_data(
+        self, buffer: "ByteInterface", message_data: MessageData
+    ) -> int:
         written = 0
 
         service_id = message_data.service_id
@@ -111,10 +121,10 @@ class Protocol:
         message = self.messages.get(order_id)
         if message is None:
             raise RuntimeError(f"Got invalid message order {order_id}")
-        
+
         written += buffer.write_unsigned1(service_id)
         written += buffer.write_unsigned1(order_id)
-    
+
         dml_length_pos = buffer.tell()
         written += buffer.write_unsigned2(0)
 

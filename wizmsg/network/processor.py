@@ -1,6 +1,6 @@
 from io import StringIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from loguru import logger
 
@@ -60,7 +60,7 @@ class Processor:
         return protocols
 
     def process_message_data(
-        self, data: ByteInterface, *, session: "Session" | None = None
+        self, data: ByteInterface, *, session: Optional["Session"] = None
     ):
         """
         Processes a data message
@@ -144,12 +144,3 @@ class Processor:
             buffer.write(frame_data.getvalue())
 
         return buffer.getvalue()
-
-
-if __name__ == "__main__":
-    test_data = bytes.fromhex("0d f0 00 00 01 03 00 00 01 00 02 00 03 00")
-
-    processor = Processor()
-
-    message = processor.process_frame(test_data)
-    print(f"{message}")
