@@ -135,3 +135,4 @@ local_example_data/*
 
 # nix
 result
+.direnv

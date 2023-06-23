@@ -1,4 +1,9 @@
-#!/usr/bin/env just --justfile
+# show this list
+default:
+    just --list
 
-test:
-  poetry run pytest
+# format python and nix
+format:
+    isort . --skip-gitignore
+    black .
+    alejandra .
