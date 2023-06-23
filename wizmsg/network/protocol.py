@@ -11,6 +11,9 @@ if TYPE_CHECKING:
 
 @dataclass
 class MessageData:
+    service_id: int
+    order_id: int
+
     name: str
     # param name: value
     parameters: dict[str, Any]
@@ -20,7 +23,7 @@ class Message:
     def __init__(self, definition: "MessageDefinition"):
         self.definition = definition
 
-    def process_message_data(self, data: "ByteInterface") -> MessageData:
+    def process_message_data(self, service_id: int, data: "ByteInterface") -> MessageData:
         """Only gets the arg data"""
         parameters = {}
         for parameter_definition in self.definition.parameters.values():
@@ -51,29 +54,19 @@ class Message:
 
             parameters[name] = value
 
-        return MessageData(self.definition.name, parameters)
+        return MessageData(service_id, self.definition.order, self.definition.name, parameters)
 
-    def unprocess_message_data(self, data: "ByteInterface", message_data: MessageData) -> int:
+    def prepare_message_data(self, data: "ByteInterface", message_data: MessageData) -> int:
         written = 0
 
         for name, value in message_data.parameters.items():
             parameter_definition = self.definition.parameters[name]
             write_method = "write_" + WIZ_TYPE_CONVERSION_TABLE[parameter_definition.type]
 
-            # TODO: write_wide_string
-            if write_method == "write_string":
-                if isinstance(value, bytes):
-                    written += data.write(value)
-                    continue
+            if write_method == "write_string" and isinstance(value, str):
+                value = value.encode()
 
-                try:
-                    written += getattr(data, write_method)(value.encode())
-                except UnicodeEncodeError:
-                    logger.warning(
-                        "ignoring string encoding failure; likely class data"
-                    )
-            else:
-                written += getattr(data, write_method)(value)
+            written += getattr(data, write_method)(value)
 
         return written
 
@@ -102,36 +95,40 @@ class Protocol:
             f"{order_id=} {length=} {message.definition.name=} rest={data.getbuffer()[data.tell():].hex(' ')}"
         )
 
-        message_data = message.process_message_data(data)
+        message_data = message.process_message_data(self.definition.service_id, data)
 
         # there should be a single null byte left in the buffer at this point
         data.seek(1)
 
         return message_data
 
-    def prepare_protocol_data(self, buffer: "ByteInterface", order_id: int, message_data: MessageData) -> int:
-        message = self.messages.get(order_id)
+    def prepare_protocol_data(self, buffer: "ByteInterface", message_data: MessageData) -> int:
+        written = 0
 
+        service_id = message_data.service_id
+        order_id = message_data.order_id
+
+        message = self.messages.get(order_id)
         if message is None:
             raise RuntimeError(f"Got invalid message order {order_id}")
         
-        written = 0
+        written += buffer.write_unsigned1(service_id)
         written += buffer.write_unsigned1(order_id)
-        length_position = buffer.tell()
+    
+        dml_length_pos = buffer.tell()
+        written += buffer.write_unsigned2(0)
 
-        written_message = message.unprocess_message_data(buffer, message_data)
+        message_bytes = message.prepare_message_data(buffer, message_data)
 
-        checkpoint = buffer.tell()
-        buffer.seek(length_position)
-
-        written += buffer.write_unsigned2(written_message)
-
-        buffer.seek(checkpoint)
+        current_pos = buffer.tell()
+        buffer.seek(dml_length_pos)
+        buffer.write_unsigned2(message_bytes)
+        buffer.seek(current_pos)
 
         # trailing null byte
         written += buffer.write_unsigned1(0)
 
-        return written + written_message
+        return written + message_bytes
 
     # TODO: what was this supposed to do
     # def prepare_message(self, message: Message) -> bytes:

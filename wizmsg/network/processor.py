@@ -1,17 +1,18 @@
 from io import StringIO
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from loguru import logger
 
 from wizmsg import DATA_START_MAGIC, LARGE_DATA_MAGIC, ByteInterface, ProtocolDefinition
 from wizmsg.network.controls import (
+    Control,
     KeepAlive,
     KeepAliveResponse,
     SessionAccept,
     SessionOffer,
 )
-from wizmsg.network.protocol import Protocol
+from wizmsg.network.protocol import MessageData, Protocol
 
 if TYPE_CHECKING:
     from wizmsg import Session
@@ -88,7 +89,6 @@ class Processor:
         raw_interface = ByteInterface(raw)
 
         magic = raw_interface.unsigned2()
-
         if magic != DATA_START_MAGIC:
             raise ValueError(
                 f"Magic mismatch, expected: {DATA_START_MAGIC} got: {magic}"
@@ -96,20 +96,54 @@ class Processor:
 
         # I don't really need size or large size
         size = raw_interface.unsigned2()
-
         if size >= LARGE_DATA_MAGIC:
-            large_size_data = raw_interface.unsigned4()
+            size = raw_interface.unsigned4()
 
         is_control = raw_interface.bool()
         control_opcode = raw_interface.unsigned1()
-
-        reserved = raw_interface.unsigned2()
+        raw_interface.unsigned2()
 
         if is_control:
             return self.process_control_data(raw_interface, control_opcode)
 
         else:
             return self.process_message_data(raw_interface)
+
+    def prepare_frame(self, frame: Union[Control, MessageData]) -> bytes:
+        buffer = ByteInterface()
+
+        buffer.write_unsigned2(DATA_START_MAGIC)
+
+        frame_data = ByteInterface()
+        if isinstance(frame, Control):
+            body_size = frame.to_data(frame_data) + 4
+            if body_size >= LARGE_DATA_MAGIC:
+                buffer.write_unsigned2(LARGE_DATA_MAGIC)
+                buffer.write_unsigned4(body_size)
+            else:
+                buffer.write_unsigned2(body_size)
+
+            buffer.write_bool(True)
+            buffer.write_unsigned1(frame.opcode)
+            buffer.write_unsigned2(0)
+            buffer.write(frame_data.getvalue())
+
+        else:
+            protocol = self.protocols[frame.service_id]
+
+            body_size = protocol.prepare_protocol_data(frame_data, frame) + 4
+            if body_size >= LARGE_DATA_MAGIC:
+                buffer.write_unsigned2(LARGE_DATA_MAGIC)
+                buffer.write_unsigned4(body_size)
+            else:
+                buffer.write_unsigned2(body_size)
+
+            buffer.write_bool(False)
+            buffer.write_unsigned1(0)
+            buffer.write_unsigned2(0)
+            buffer.write(frame_data.getvalue())
+
+        return buffer.getvalue()
 
 
 if __name__ == "__main__":

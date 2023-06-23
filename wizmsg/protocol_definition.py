@@ -15,7 +15,7 @@ class MessageDefinitionParameter:
 
 @dataclass
 class MessageDefinition:
-    order: int | None
+    order: int
     name: str
     description: str
     parameters: dict[str, MessageDefinitionParameter]
@@ -116,6 +116,7 @@ def _get_messages_from_xml(
                 f"index and message order mismatch {message.order=} {idx=}"
             )
 
+        message.order = idx
         sorted_messages[idx] = message
 
     sorted_messages.update(messages)
