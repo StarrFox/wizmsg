@@ -12,7 +12,9 @@ class Server:
         self.message_processor = network.Processor()
         self.sessions = []
 
-    async def _client_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    async def _client_connection(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ):
         data = await reader.read()
         message = self.message_processor.process_frame(data)
 
