@@ -85,7 +85,7 @@ class Processor:
 
         raise ValueError(f"{opcode} is not a registered opcode")
 
-    def process_frame(self, raw: bytes):
+    def process_frame(self, raw: bytes) -> Union[Control, MessageData]:
         raw_interface = ByteInterface(raw)
 
         magic = raw_interface.unsigned2()
