@@ -151,7 +151,7 @@ class SessionAccept(Control):
     fnv: int
     challenge_answer: int
     echo: int
-    timestamp: int
+    timestamp2: int
     key: bytes
     nonce: bytes
 
@@ -175,7 +175,7 @@ class SessionAccept(Control):
         fnv = data.unsigned4()
         challenge_answer = data.unsigned4()
         echo = data.unsigned4()
-        timestamp = data.signed4()
+        timestamp2 = data.signed4()
         key = data.read(16)
         nonce = data.read(16)
 
@@ -189,15 +189,16 @@ class SessionAccept(Control):
             fnv=fnv,
             challenge_answer=challenge_answer,
             echo=echo,
-            timestamp=timestamp,
+            timestamp2=timestamp2,
             key=key,
             nonce=nonce,
+            opcode=5,
         )
 
     def to_data(self, buffer: "ByteInterface") -> int:
         written = 0
 
-        written += buffer.write_unsigned16(0)
+        written += buffer.write_unsigned2(0)
 
         # TODO: 2038 max 4 byte timestamp reached
         written += buffer.write_signed4(0)
@@ -213,7 +214,7 @@ class SessionAccept(Control):
         written += buffer.write_unsigned4(self.fnv)
         written += buffer.write_unsigned4(self.challenge_answer)
         written += buffer.write_unsigned4(self.echo)
-        written += buffer.write_signed4(self.timestamp)
+        written += buffer.write_signed4(self.timestamp2)
         written += buffer.write(self.key)
         written += buffer.write(self.nonce)
 
