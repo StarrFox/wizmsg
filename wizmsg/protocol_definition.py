@@ -51,6 +51,12 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[Union[int,
         # this MsgName is actually incorrect; doesn't match the tag name which is used for sorting
         # message_name = _get_record_value("_MsgName")
         message_name = message_element.tag
+
+        # ignore duplicates
+        if messages.get(message_name):
+            logger.debug(f"ignoring duplicate message {message_name}")
+            continue
+
         message_description = _get_record_value("_MsgDescription")
         message_order = _get_record_value("_MsgOrder", allow_missing=True, as_int=True)
 
@@ -76,11 +82,6 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[Union[int,
                     )
 
             parameters[parameter_name] = (MessageDefinitionParameter(parameter_name, parameter_type))
-
-        # ignore duplicates
-        if messages.get(message_name):
-            logger.debug(f"ignoring duplicate message {message_name}")
-            continue
 
         messages[message_name] = MessageDefinition(message_order, message_name, message_description, parameters)
 
