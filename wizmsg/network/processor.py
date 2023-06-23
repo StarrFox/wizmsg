@@ -54,7 +54,7 @@ class Processor:
 
         return protocols
 
-    def process_message_data(self, data: ByteInterface, *, session: "Session" = None):
+    def process_message_data(self, data: ByteInterface, *, session: "Session" | None = None):
         """
         Processes a data message
         """
@@ -79,29 +79,29 @@ class Processor:
         raise ValueError(f"{opcode} is not a registered opcode")
 
     def process_frame(self, raw: bytes):
-        raw = ByteInterface(raw)
+        raw_interface = ByteInterface(raw)
 
-        magic = raw.unsigned2()
+        magic = raw_interface.unsigned2()
 
         if magic != DATA_START_MAGIC:
             raise ValueError(f"Magic mismatch, expected: {DATA_START_MAGIC} got: {magic}")
 
         # I don't really need size or large size
-        size = raw.unsigned2()
+        size = raw_interface.unsigned2()
 
         if size >= LARGE_DATA_MAGIC:
-            large_size_data = raw.unsigned4()
+            large_size_data = raw_interface.unsigned4()
 
-        is_control = raw.bool()
-        control_opcode = raw.unsigned1()
+        is_control = raw_interface.bool()
+        control_opcode = raw_interface.unsigned1()
 
-        reserved = raw.unsigned2()
+        reserved = raw_interface.unsigned2()
 
         if is_control:
-            return self.process_control_data(raw, control_opcode)
+            return self.process_control_data(raw_interface, control_opcode)
 
         else:
-            return self.process_message_data(raw)
+            return self.process_message_data(raw_interface)
 
 
 if __name__ == "__main__":

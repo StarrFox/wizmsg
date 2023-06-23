@@ -1,6 +1,7 @@
 DATA_START_MAGIC = 0xF00D
 LARGE_DATA_MAGIC = 0x8000
 
+
 WIZ_TYPE_CONVERSION_TABLE = {
     "BYT": "signed1",
     "UBYT": "unsigned1",

@@ -44,6 +44,7 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[Union[int,
                 raise ValueError(f"{sub_element_name} missing from message entry")
 
             if as_int:
+                # TODO: what should happen here if element.text is None
                 return int(element.text)
 
             return element.text
