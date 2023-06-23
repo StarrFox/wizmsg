@@ -2,7 +2,6 @@ import struct
 import typing
 from io import BytesIO
 
-
 UnpackedData: typing.TypeAlias = typing.Any | tuple[typing.Any]
 
 

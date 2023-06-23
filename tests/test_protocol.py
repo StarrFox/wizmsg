@@ -1,6 +1,5 @@
 from wizmsg import ProtocolDefinition
 
-
 string_protocol = """
 <FakeMessages>
     <_ProtocolInfo>
@@ -49,16 +48,24 @@ def test_load_protocol_from_string():
 
 def test_load_protocol_from_file():
     # TODO: replace with manual definition (include dupes)
-    protocol = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/GameMessages.xml")
+    protocol = ProtocolDefinition.from_xml_file(
+        "/home/starr/PycharmProjects/wizmsg/message_files/GameMessages.xml"
+    )
 
     assert protocol.description == "Game Messages"
 
-    protocol = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/LoginMessages.xml")
-    protocol = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/PatchMessages.xml")
-    protocol = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/PetMessages.xml")
+    protocol = ProtocolDefinition.from_xml_file(
+        "/home/starr/PycharmProjects/wizmsg/message_files/LoginMessages.xml"
+    )
+    protocol = ProtocolDefinition.from_xml_file(
+        "/home/starr/PycharmProjects/wizmsg/message_files/PatchMessages.xml"
+    )
+    protocol = ProtocolDefinition.from_xml_file(
+        "/home/starr/PycharmProjects/wizmsg/message_files/PetMessages.xml"
+    )
     protocol = ProtocolDefinition.from_xml_file(
         "/home/starr/PycharmProjects/wizmsg/message_files/ScriptDebuggerMessages.xml"
     )
-    protocol = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/WizardMessages.xml")
-
-
+    protocol = ProtocolDefinition.from_xml_file(
+        "/home/starr/PycharmProjects/wizmsg/message_files/WizardMessages.xml"
+    )

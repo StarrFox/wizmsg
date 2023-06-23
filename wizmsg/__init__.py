@@ -1,5 +1,9 @@
-from .constants import *
 from .byte_interface import ByteInterface
-from .protocol_definition import ProtocolDefinition, MessageDefinition, MessageDefinitionParameter
+from .constants import *
+from .protocol_definition import (
+    MessageDefinition,
+    MessageDefinitionParameter,
+    ProtocolDefinition,
+)
 from .server import Server
 from .session import Session

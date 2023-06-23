@@ -6,7 +6,9 @@ from wizmsg import DATA_START_MAGIC, LARGE_DATA_MAGIC, ByteInterface, Server
 
 
 class Session:
-    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, server: Server):
+    def __init__(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, server: Server
+    ):
         self.reader = reader
         self.writer = writer
         self.server = server
@@ -51,7 +53,9 @@ class Session:
 
             magic, size = struct.unpack("<HH", magic_and_size)
 
-            assert magic == DATA_START_MAGIC, f"Magic mismatch, {magic=} {DATA_START_MAGIC=}"
+            assert (
+                magic == DATA_START_MAGIC
+            ), f"Magic mismatch, {magic=} {DATA_START_MAGIC=}"
 
             if size >= LARGE_DATA_MAGIC:
                 large_size_data = await self.reader.read(4)

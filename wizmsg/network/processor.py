@@ -4,10 +4,14 @@ from typing import TYPE_CHECKING
 
 from loguru import logger
 
-from wizmsg import ByteInterface, ProtocolDefinition, DATA_START_MAGIC, LARGE_DATA_MAGIC
+from wizmsg import DATA_START_MAGIC, LARGE_DATA_MAGIC, ByteInterface, ProtocolDefinition
+from wizmsg.network.controls import (
+    KeepAlive,
+    KeepAliveResponse,
+    SessionAccept,
+    SessionOffer,
+)
 from wizmsg.network.protocol import Protocol
-from wizmsg.network.controls import SessionOffer, SessionAccept, KeepAlive, KeepAliveResponse
-
 
 if TYPE_CHECKING:
     from wizmsg import Session
@@ -37,10 +41,10 @@ class Processor:
         return self.load_protocol(protocol_string)
 
     def load_protocols_from_directory(
-            self,
-            protocol_directory: str | Path,
-            *,
-            allowed_glob: str = "*.xml",
+        self,
+        protocol_directory: str | Path,
+        *,
+        allowed_glob: str = "*.xml",
     ) -> list[Protocol]:
         """
         server.load_protocols_from_directory("messages", allowed_glob="*Messages.xml")
@@ -54,7 +58,9 @@ class Processor:
 
         return protocols
 
-    def process_message_data(self, data: ByteInterface, *, session: "Session" | None = None):
+    def process_message_data(
+        self, data: ByteInterface, *, session: "Session" | None = None
+    ):
         """
         Processes a data message
         """
@@ -84,7 +90,9 @@ class Processor:
         magic = raw_interface.unsigned2()
 
         if magic != DATA_START_MAGIC:
-            raise ValueError(f"Magic mismatch, expected: {DATA_START_MAGIC} got: {magic}")
+            raise ValueError(
+                f"Magic mismatch, expected: {DATA_START_MAGIC} got: {magic}"
+            )
 
         # I don't really need size or large size
         size = raw_interface.unsigned2()
@@ -105,9 +113,7 @@ class Processor:
 
 
 if __name__ == "__main__":
-    test_data = bytes.fromhex(
-        "0d f0 00 00 01 03 00 00 01 00 02 00 03 00"
-    )
+    test_data = bytes.fromhex("0d f0 00 00 01 03 00 00 01 00 02 00 03 00")
 
     processor = Processor()
 

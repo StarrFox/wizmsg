@@ -1,8 +1,8 @@
 from dataclasses import dataclass
+from io import StringIO
 from pathlib import Path
 from typing import Union
 from xml.etree import ElementTree
-from io import StringIO
 
 from loguru import logger
 
@@ -21,7 +21,9 @@ class MessageDefinition:
     parameters: dict[str, MessageDefinitionParameter]
 
 
-def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[Union[int, str], MessageDefinition]:
+def _get_messages_from_xml(
+    root_element: ElementTree.Element,
+) -> dict[Union[int, str], MessageDefinition]:
     messages = {}
     for message_element in root_element:
         if message_element.tag == "_ProtocolInfo":
@@ -30,10 +32,7 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[Union[int,
         record = message_element[0]
 
         def _get_record_value(
-                sub_element_name,
-                *,
-                allow_missing: bool = False,
-                as_int: bool = False
+            sub_element_name, *, allow_missing: bool = False, as_int: bool = False
         ) -> int | str | None:
             element = record.find(sub_element_name)
 
@@ -82,9 +81,13 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[Union[int,
                         f"Unhandled TYPE for param {parameter_name} of message {message_name}"
                     )
 
-            parameters[parameter_name] = (MessageDefinitionParameter(parameter_name, parameter_type))
+            parameters[parameter_name] = MessageDefinitionParameter(
+                parameter_name, parameter_type
+            )
 
-        messages[message_name] = MessageDefinition(message_order, message_name, message_description, parameters)
+        messages[message_name] = MessageDefinition(
+            message_order, message_name, message_description, parameters
+        )
 
     message_defs = list(messages.values())
 
@@ -109,7 +112,9 @@ def _get_messages_from_xml(root_element: ElementTree.Element) -> dict[Union[int,
     for idx, message in enumerate(message_defs, start=1):
         # sanity check
         if message.order is not None and message.order != idx:
-            raise RuntimeError(f"index and message order mismatch {message.order=} {idx=}")
+            raise RuntimeError(
+                f"index and message order mismatch {message.order=} {idx=}"
+            )
 
         sorted_messages[idx] = message
 
@@ -165,11 +170,15 @@ class ProtocolDefinition:
 
         messages = _get_messages_from_xml(root_element)
 
-        return cls(service_id, protocol_type, protocol_version, protocol_description, messages)
+        return cls(
+            service_id, protocol_type, protocol_version, protocol_description, messages
+        )
 
 
 if __name__ == "__main__":
-    definition = ProtocolDefinition.from_xml_file("/home/starr/PycharmProjects/wizmsg/message_files/GameMessages.xml")
+    definition = ProtocolDefinition.from_xml_file(
+        "/home/starr/PycharmProjects/wizmsg/message_files/GameMessages.xml"
+    )
 
     for order, message in definition.messages.items():
         print(f"{order}: {message.name}")

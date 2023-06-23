@@ -5,9 +5,8 @@ from loguru import logger
 
 from wizmsg import WIZ_TYPE_CONVERSION_TABLE
 
-
 if TYPE_CHECKING:
-    from wizmsg import ProtocolDefinition, MessageDefinition, ByteInterface
+    from wizmsg import ByteInterface, MessageDefinition, ProtocolDefinition
 
 
 @dataclass
@@ -39,11 +38,15 @@ class Message:
                     value = value.decode()
                 except UnicodeDecodeError:
                     # TODO: log a warning here or something
-                    logger.warning("ignoring string decoding failure; likely class data")
+                    logger.warning(
+                        "ignoring string decoding failure; likely class data"
+                    )
             else:
                 value = getattr(data, read_method)()
 
-            logger.debug(f"{name=} {value=} {param_type=} rest={data.getbuffer()[data.tell():].hex(' ')}")
+            logger.debug(
+                f"{name=} {value=} {param_type=} rest={data.getbuffer()[data.tell():].hex(' ')}"
+            )
 
             parameters[name] = value
 
@@ -72,7 +75,9 @@ class Protocol:
         if message is None:
             raise RuntimeError(f"Got invalid message order {order_id}")
 
-        logger.debug(f"{order_id=} {length=} {message.definition.name=} rest={data.getbuffer()[data.tell():].hex(' ')}")
+        logger.debug(
+            f"{order_id=} {length=} {message.definition.name=} rest={data.getbuffer()[data.tell():].hex(' ')}"
+        )
 
         message_data = message.process_message_data(data)
         # there should be a single null byte left in the buffer at this point

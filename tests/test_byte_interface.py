@@ -1,5 +1,5 @@
 from hypothesis import given
-from hypothesis.strategies import integers, booleans, floats
+from hypothesis.strategies import booleans, floats, integers
 
 from wizmsg import ByteInterface
 
