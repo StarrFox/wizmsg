@@ -46,7 +46,6 @@ class Message:
                     logger.warning(
                         "ignoring string decoding failure; likely class data"
                     )
-                    value = value
             else:
                 value = getattr(data, read_method)()
 
