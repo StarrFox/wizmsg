@@ -9,8 +9,7 @@ UnpackedData: typing.TypeAlias = typing.Any | tuple[typing.Any]
 class ByteInterface(BytesIO):
     def read_format_string(self, format_string: str) -> UnpackedData:
         size = struct.calcsize(format_string)
-        data = self.read(size)
-        unpacked = struct.unpack(format_string, data)
+        unpacked = struct.unpack(format_string, self.read(size))
 
         if len(unpacked) == 1:
             return unpacked[0]
@@ -24,27 +23,22 @@ class ByteInterface(BytesIO):
         packed = struct.pack(format_string, data)
         return self.write(packed)
 
-    def string(self) -> str:
-        # 2 bytes for length
+    def string(self) -> bytes:
         length = self.unsigned2()
-        data = self.read(length)
-        return data.decode()
+        return self.read(length)
 
-    def write_string(self, string: str):
-        length = len(string)
-        self.write_unsigned2(length)
-        self.write(string.encode())
+    def write_string(self, string: bytes):
+        self.write_unsigned2(len(string))
+        self.write(string)
 
     def wide_string(self) -> str:
-        # length is number of characters
         length = self.unsigned2() * 2
-        data = self.read(length)
-        return data.decode("utf-16")
+        return self.read(length).decode("utf-16-le")
 
     def write_wide_string(self, wide_string: str):
-        length = len(wide_string)
-        self.write_unsigned2(length)
-        self.write(wide_string.encode("utf-16"))
+        wide_string = wide_string.encode("utf-16-le")
+        self.write_unsigned2(len(wide_string))
+        self.write(wide_string)
 
     def bool(self) -> bool:
         return self.read_format_string("?")

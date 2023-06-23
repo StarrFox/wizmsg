@@ -34,12 +34,12 @@ class Message:
                 raise RuntimeError(f"Missing read method for type {param_type}")
 
             if read_method == "string":
+                value = getattr(data, read_method)()
                 try:
-                    value = getattr(data, read_method)()
+                    value = value.decode()
                 except UnicodeDecodeError:
                     # TODO: log a warning here or something
                     logger.warning("ignoring string decoding failure; likely class data")
-                    value = None
             else:
                 value = getattr(data, read_method)()
 
