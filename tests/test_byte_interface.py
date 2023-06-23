@@ -106,7 +106,7 @@ def test_unsigned8(test_value):
 
 
 @given(integers(-0x7FFFFFFFFFFFFFFF - 1, 0x7FFFFFFFFFFFFFFF))
-def test_signed4(test_value):
+def test_signed8(test_value):
     interface = ByteInterface()
 
     interface.write_signed8(test_value)
