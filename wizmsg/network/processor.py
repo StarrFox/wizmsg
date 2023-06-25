@@ -18,6 +18,10 @@ if TYPE_CHECKING:
     from wizmsg import Session
 
 
+class ValeError(ValueError):
+    pass
+
+
 class Processor:
     def __init__(self):
         # service id: definition
@@ -70,7 +74,8 @@ class Processor:
         protocol = self.protocols.get(service_id)
 
         if protocol is None:
-            raise RuntimeError(f"Unexpected service id {service_id}")
+            raise ValeError(f"Unexpected service id {service_id}")
+            #raise RuntimeError(f"Unexpected service id {service_id}")
 
         return protocol.process_protocol_data(data)
 
