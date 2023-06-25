@@ -66,9 +66,18 @@ def _get_messages_from_xml(
             if parameter_name.startswith("_"):
                 continue
 
+            def _try_either(target: dict, keys: list[str]):
+                for key in keys:
+                    try:
+                        return target[key]
+                    except KeyError:
+                        continue
+                raise KeyError(f"Couldn't find {keys} in dict")
+
             # TODO: sometimes this isn't provided, mainly to troll
             try:
-                parameter_type = parameter_element.attrib["TYPE"]
+                #parameter_type = parameter_element.attrib["TYPE"]
+                parameter_type = _try_either(parameter_element.attrib, ["TYPE", "TYP"])
             except KeyError:
                 if parameter_name == "GlobalID":
                     logger.debug(
