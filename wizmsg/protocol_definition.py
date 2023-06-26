@@ -77,7 +77,7 @@ def _get_messages_from_xml(
             # TODO: sometimes this isn't provided, mainly to troll
             try:
                 #parameter_type = parameter_element.attrib["TYPE"]
-                parameter_type = _try_either(parameter_element.attrib, ["TYPE", "TYP"])
+                parameter_type = _try_either(parameter_element.attrib, ["TYPE", "TYP", "TPYE"])
             except KeyError:
                 if parameter_name == "GlobalID":
                     logger.debug(
